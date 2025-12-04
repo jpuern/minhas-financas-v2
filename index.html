@@ -43,56 +43,86 @@
                 </a>
             </nav>
             <div class="sidebar-footer">
-                <!-- Sync Google -->
-                <div class="sync-section">
-                    <div class="sync-header">
-                        <span class="status-dot" id="googleStatus"></span>
-                        <span id="lastSyncTime">Não sincronizado</span>
+                <!-- Perfil do Usuário -->
+                <div class="user-profile">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
                     </div>
-                    <button class="btn-google-sync" id="googleSyncBtn" onclick="syncToGoogleSheets()">
-                        <i class="fab fa-google"></i>
-                        <span>Conectar Google</span>
-                    </button>
-                    <div class="sync-actions">
-                        <button class="btn-sync-action" onclick="importFromGoogleSheets()" title="Importar do Google">
-                            <i class="fas fa-cloud-download-alt"></i>
-                        </button>
-                        <button class="btn-sync-action" id="syncBtn" title="Sincronizar com Google Sheets">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                        <button class="btn-sync-action" onclick="openGoogleConfigModal()" title="Configurações">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                        <button class="btn-clear-data" id="logoutBtn" style="border-color: var(--primary); color: var(--primary);">
-                            <i class="fas fa-sign-out-alt"></i>
-                            <span>Sair</span>
-                        </button>
+                    <div class="user-info">
+                        <span class="user-name" id="sidebarUserName">Usuário</span>
+                        <span class="user-email" id="sidebarUserEmail">email@exemplo.com</span>
                     </div>
+                </div>
+            
+                <!-- Status de Conexão -->
+                <div class="sync-status">
+                    <span class="status-dot"></span>
+                    <span id="syncStatusText">Conectado</span>
                 </div>
             
                 <!-- Backup Local -->
                 <div class="backup-section">
-                    <span class="section-label">Backup Local</span>
+                    <span class="backup-title">BACKUP LOCAL</span>
                     <div class="backup-buttons">
-                        <button class="btn-backup" onclick="exportData()">
+                        <button class="btn-backup" id="exportBtn" title="Exportar dados">
                             <i class="fas fa-download"></i>
                             <span>Exportar</span>
                         </button>
-                        <label class="btn-backup btn-import">
+                        <button class="btn-backup" id="importBtn" title="Importar dados">
                             <i class="fas fa-upload"></i>
                             <span>Importar</span>
-                            <input type="file" id="importFile" accept=".json" onchange="importData(this.files[0])" hidden>
-                        </label>
+                        </button>
+                        <input type="file" id="importFile" accept=".json" style="display: none;">
                     </div>
                 </div>
             
-                <!-- Limpar Dados -->
-                <button class="btn-clear-data" id="clearData">
-                    <i class="fas fa-trash"></i>
-                    <span>Limpar Dados</span>
-                </button>
+                <!-- Ações da Conta -->
+                <div class="account-actions">
+                    <button class="btn-logout" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Sair da Conta</span>
+                    </button>
+                    <button class="btn-danger-outline" id="clearDataBtn">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>Limpar Dados</span>
+                    </button>
+                </div>
             </div>
         </aside>
+        <!-- Modal de Confirmação para Limpar Dados -->
+        <div class="modal" id="clearDataModal">
+            <div class="modal-content" style="max-width: 400px;">
+                <div class="modal-header">
+                    <h2><i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i> Limpar Todos os Dados</h2>
+                    <button class="modal-close" id="closeClearDataModal">&times;</button>
+                </div>
+                <div class="modal-body" style="padding: 24px;">
+                    <p style="margin-bottom: 16px; color: var(--text-secondary);">
+                        Esta ação irá excluir <strong>permanentemente</strong> todas as suas:
+                    </p>
+                    <ul style="margin-bottom: 16px; padding-left: 20px; color: var(--text-secondary);">
+                        <li>📊 Transações</li>
+                        <li>🏷️ Categorias personalizadas</li>
+                    </ul>
+                    <div style="padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; margin-bottom: 16px;">
+                        <p style="color: var(--danger); font-size: 14px; margin: 0;">
+                            <i class="fas fa-warning"></i> Esta ação não pode ser desfeita!
+                        </p>
+                    </div>
+                    <p style="font-size: 14px; color: var(--text-muted);">
+                        Digite <strong>CONFIRMAR</strong> para prosseguir:
+                    </p>
+                    <input type="text" id="clearDataConfirmInput" class="form-control" placeholder="Digite CONFIRMAR"
+                        style="margin-top: 8px; width: 100%; padding: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 8px; color: var(--text-primary);">
+                </div>
+                <div class="form-actions" style="padding: 0 24px 24px;">
+                    <button class="btn btn-cancel" id="cancelClearDataBtn">Cancelar</button>
+                    <button class="btn btn-save" id="confirmClearDataBtn" disabled style="background: var(--danger);">
+                        <i class="fas fa-trash-alt"></i> Limpar Tudo
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Main Content -->
         <main class="main-content">
@@ -415,6 +445,8 @@
     <!-- Toast Notifications -->
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase.js"></script>

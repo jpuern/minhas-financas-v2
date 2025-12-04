@@ -54,6 +54,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Mostra nome do usuário (opcional)
         showUserInfo();
+        updateSidebarUserInfo();
+        updateConnectionStatus();
+        initClearDataModal();
         
     } catch (error) {
         console.error('Erro na inicialização:', error);
@@ -1245,4 +1248,129 @@ async function importData(file) {
     };
     
     reader.readAsText(file);
+}
+
+// ========================================
+// SIDEBAR - PERFIL E AÇÕES
+// ========================================
+
+// Atualiza informações do usuário no sidebar
+function updateSidebarUserInfo() {
+    const user = supabaseClient.auth.getUser();
+    user.then(({ data }) => {
+        if (data.user) {
+            const userName = data.user.user_metadata?.name || data.user.email.split('@')[0];
+            const userEmail = data.user.email;
+            
+            const nameEl = document.getElementById('sidebarUserName');
+            const emailEl = document.getElementById('sidebarUserEmail');
+            
+            if (nameEl) nameEl.textContent = userName;
+            if (emailEl) emailEl.textContent = userEmail;
+        }
+    });
+}
+
+// Verifica status de conexão
+function updateConnectionStatus() {
+    const statusContainer = document.querySelector('.sync-status');
+    const statusText = document.getElementById('syncStatusText');
+    
+    if (navigator.onLine) {
+        statusContainer?.classList.remove('offline');
+        if (statusText) statusText.textContent = 'Conectado';
+    } else {
+        statusContainer?.classList.add('offline');
+        if (statusText) statusText.textContent = 'Offline';
+    }
+}
+
+// Listeners para conexão
+window.addEventListener('online', updateConnectionStatus);
+window.addEventListener('offline', updateConnectionStatus);
+
+// ========================================
+// LIMPAR DADOS COM CONFIRMAÇÃO
+// ========================================
+
+function initClearDataModal() {
+    const clearDataBtn = document.getElementById('clearDataBtn');
+    const clearDataModal = document.getElementById('clearDataModal');
+    const closeClearDataModal = document.getElementById('closeClearDataModal');
+    const cancelClearDataBtn = document.getElementById('cancelClearDataBtn');
+    const confirmClearDataBtn = document.getElementById('confirmClearDataBtn');
+    const confirmInput = document.getElementById('clearDataConfirmInput');
+    
+    // Abrir modal
+    clearDataBtn?.addEventListener('click', () => {
+        clearDataModal.classList.add('active');
+        confirmInput.value = '';
+        confirmClearDataBtn.disabled = true;
+    });
+    
+    // Fechar modal
+    const closeModal = () => {
+        clearDataModal.classList.remove('active');
+        confirmInput.value = '';
+        confirmClearDataBtn.disabled = true;
+    };
+    
+    closeClearDataModal?.addEventListener('click', closeModal);
+    cancelClearDataBtn?.addEventListener('click', closeModal);
+    
+    // Fechar ao clicar fora
+    clearDataModal?.addEventListener('click', (e) => {
+        if (e.target === clearDataModal) closeModal();
+    });
+    
+    // Validar input de confirmação
+    confirmInput?.addEventListener('input', (e) => {
+        const isValid = e.target.value.toUpperCase() === 'CONFIRMAR';
+        confirmClearDataBtn.disabled = !isValid;
+    });
+    
+    // Confirmar exclusão
+    confirmClearDataBtn?.addEventListener('click', async () => {
+        if (confirmInput.value.toUpperCase() !== 'CONFIRMAR') return;
+        
+        confirmClearDataBtn.disabled = true;
+        confirmClearDataBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Limpando...';
+        
+        try {
+            // Limpar transações
+            const { error: transError } = await supabaseClient
+                .from('transactions')
+                .delete()
+                .neq('id', '00000000-0000-0000-0000-000000000000'); // Deleta tudo
+            
+            if (transError) throw transError;
+            
+            // Limpar categorias (mantém as padrão ou limpa tudo?)
+            const { error: catError } = await supabaseClient
+                .from('categories')
+                .delete()
+                .eq('is_custom', true); // Remove só as personalizadas
+            
+            if (catError) throw catError;
+            
+            // Limpar localStorage
+            localStorage.removeItem('financas_transactions');
+            localStorage.removeItem('financas_categories');
+            
+            showToast('Dados limpos com sucesso!', 'success');
+            closeModal();
+            
+            // Recarregar dados
+            await loadCategories();
+            await loadTransactions();
+            updateUI();
+            
+        } catch (error) {
+            console.error('Erro ao limpar dados:', error);
+            showToast('Erro ao limpar dados. Tente novamente.', 'error');
+        } finally {
+            confirmClearDataBtn.disabled = false;
+            confirmClearDataBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Limpar Tudo';
+        }
+    });
 }
